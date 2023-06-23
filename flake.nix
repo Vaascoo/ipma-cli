@@ -23,7 +23,7 @@
             python
           ];
         };
-        defaultPackage = mach-nix.lib.${system}.buildPythonPackage {
+        packages.ipma-cli = mach-nix.lib.${system}.buildPythonPackage {
           src = self;
           pname = "ipma";
           version = "1.0";
