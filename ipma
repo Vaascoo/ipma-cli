@@ -21,7 +21,7 @@ def list_locations():
 
 def get_weather(city: str, when: str):
     if (when_enum := parse_when(when)) is None:
-        print("'when' must be one of the following: 'today', 'tomorrow', 'after_tomorrow'")
+        return "'when' must be one of the following: 'today', 'tomorrow', 'after_tomorrow'"
     query = list(filter(lambda s: s["local"].lower() == city.lower(), api.list_locations()["data"]))
     if len(query) == 0: return f"No such city as {city}"
     id = query[0]["globalIdLocal"]
