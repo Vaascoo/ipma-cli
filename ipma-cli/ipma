@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+from typing import Optional
+from os.path import join
+import requests
+import enum
+import fire
+
+API_URL = "https://api.ipma.pt/open-data"
+
+class IPMA:
+
+    class When(enum.Enum):
+        TODAY = 0
+        TOMORROW = 1
+        AFTER_TOMORROW = 2
+
+    def __init__(self, use_session = False):
+        if use_session:
+            self.session = requests.session()
+        else:
+            # work around to avoid verbosity
+            self.session = requests
+
+    def list_locations(self):
+        url = join(API_URL, "distrits-islands.json")
+        response = self.session.get(url)
+        assert response.status_code == 200
+        return response.json()
+
+    def daily_report(self, when: When = When.TODAY):
+        url = join(API_URL, f"forecast/meteorology/cities/daily/hp-daily-forecast-day{when.value}.json")
+        response = self.session.get(url)
+        assert response.status_code == 200
+        return response.json()
+
+api = IPMA()
+
+def parse_when(input_: str) -> Optional[IPMA.When]:
+    match input_.lower():
+        case "today":
+            return IPMA.When.TODAY
+        case "tomorrow":
+            return IPMA.When.TOMORROW
+        case "after_tomorrow":
+            return IPMA.When.AFTER_TOMORROW
+    return None
+
+def list_locations():
+    return list(map(lambda s: s["local"], api.list_locations()["data"]))
+
+def get_weather(city: str, when: str):
+    if (when_enum := parse_when(when)) is None:
+        return "'when' must be one of the following: 'today', 'tomorrow', 'after_tomorrow'"
+    query = list(filter(lambda s: s["local"].lower() == city.lower(), api.list_locations()["data"]))
+    if len(query) == 0: return f"No such city as {city}"
+    id = query[0]["globalIdLocal"]
+    data = list(filter(lambda s: s["globalIdLocal"] == id, api.daily_report(when_enum)["data"]))[0]
+    data["when"] = when
+    return data
+
+if __name__ == "__main__":
+    fire.Fire({
+        "weather": get_weather,
+        "list": list_locations
+    })
