@@ -38,7 +38,7 @@ class IPMA:
                 return IPMA.When.TODAY
             case "tomorrow":
                 return IPMA.When.TOMORROW
-            case "after_tomorrow":
+            case "after tomorrow":
                 return IPMA.When.AFTER_TOMORROW
         return None
 
@@ -50,15 +50,20 @@ class Cli:
     def list(self):
         return list(map(lambda s: s["local"], self.api.list_locations()["data"]))
 
-    def weather(self, city: str, when: str):
+    def weather(self, city: str = "lisboa", when: str = "today"):
         if (when_enum := self.api.parse_when(when)) is None:
-            return "'when' must be one of the following: 'today', 'tomorrow', 'after_tomorrow'"
+            return "'when' must be one of the following: 'today', 'tomorrow', 'after tomorrow'"
         query = list(filter(lambda s: s["local"].lower() == city.lower(), self.api.list_locations()["data"]))
         if len(query) == 0: return f"No such city as {city}"
         id = query[0]["globalIdLocal"]
         data = list(filter(lambda s: s["globalIdLocal"] == id, self.api.daily_report(when_enum)["data"]))[0]
         data["when"] = when
-        return data
+        return {
+                "🌍": city.capitalize(),
+                "📅": when.capitalize(),
+                "🌡️": f"{data['tMin']}ºC to {data['tMax']}ºC",
+                "☔": f"{data['precipitaProb']}%",
+        }
 
 if __name__ == "__main__":
     fire.Fire(Cli())
