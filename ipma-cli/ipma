@@ -26,6 +26,12 @@ class IPMA:
         assert response.status_code == 200
         return response.json()
 
+    def get_descriptions(self):
+        url = join(IPMA.API_URL, "weather-type-classe.json")
+        response = self.session.get(url)
+        assert response.status_code == 200
+        return response.json()
+
     def daily_report(self, when: When = When.TODAY):
         url = join(IPMA.API_URL, f"forecast/meteorology/cities/daily/hp-daily-forecast-day{when.value}.json")
         response = self.session.get(url)
@@ -48,7 +54,7 @@ class Cli:
         self.api = IPMA()
 
     def list(self):
-        return list(map(lambda s: s["local"], self.api.list_locations()["data"]))
+        return list(map(lambda s: (s["local"], s["globalIdLocal"]), self.api.list_locations()["data"]))
 
     def weather(self, city: str = "lisboa", when: str = "today"):
         if (when_enum := self.api.parse_when(when)) is None:
@@ -58,9 +64,11 @@ class Cli:
         id = query[0]["globalIdLocal"]
         data = list(filter(lambda s: s["globalIdLocal"] == id, self.api.daily_report(when_enum)["data"]))[0]
         data["when"] = when
+        description = list(filter(lambda s: s["idWeatherType"] == data["idWeatherType"], self.api.get_descriptions()["data"]))[0]
         return {
                 "🌍": city.capitalize(),
                 "📅": when.capitalize(),
+                "⛅️": description["descWeatherTypeEN"].capitalize(),
                 "🌡️": f"{data['tMin']}ºC to {data['tMax']}ºC",
                 "☔": f"{data['precipitaProb']}%",
         }
